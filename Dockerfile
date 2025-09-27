@@ -1,13 +1,15 @@
-FROM alpine:3.20
-RUN apk add --no-cache curl unzip jq ca-certificates && update-ca-certificates
-WORKDIR /tmp
-RUN TAG=$(curl -fsSL https://api.github.com/repos/pocketbase/pocketbase/releases/latest | jq -r .tag_name) \
- && VER="${TAG#v}" \
- && curl -fsSL -o pb.zip "https://github.com/pocketbase/pocketbase/releases/download/${TAG}/pocketbase_${VER}_linux_amd64.zip" \
- && curl -fsSL -o pb.zip.sha256 "https://github.com/pocketbase/pocketbase/releases/download/${TAG}/pocketbase_${VER}_linux_amd64.zip.sha256" \
- && sha256sum -c pb.zip.sha256 \
- && unzip pb.zip -d /pb && rm -f pb.zip pb.zip.sha256
+FROM alpine:latest
+
+ARG PB_VERSION=0.30.0
+
+RUN apk add --no-cache \
+    unzip \
+    ca-certificates
+
+# Download and unzip PocketBase
+ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
+RUN unzip /tmp/pb.zip -d /pb/
+
 EXPOSE 8080
-VOLUME ["/data"]
-ENTRYPOINT ["/pb/pocketbase"]
-CMD ["serve","--http=0.0.0.0:8080","--dir=/data/pb_data","--encryptionEnv=PB_ENCRYPTION_KEY"]
+
+CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
